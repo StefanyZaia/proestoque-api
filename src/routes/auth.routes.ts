@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validate";
-import { registroSchema, loginSchema } from "../schemas/auth.schema";
+import { loginSchema, refreshSchema, registroSchema } from "../schemas/auth.schema";
 
 const router = Router();
 const controller = new AuthController();
@@ -18,6 +18,12 @@ router.post(
   "/login",
   validate(loginSchema),
   controller.login.bind(controller)
+);
+
+router.post(
+  "/refresh",
+  validate(refreshSchema),
+  controller.refresh.bind(controller)
 );
 
 // Rota PROTEGIDA — requer token válido

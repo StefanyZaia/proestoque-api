@@ -65,11 +65,12 @@ model Movimentacao {
 
 // ── USUÁRIO (será expandido na próxima aula com hash de senha) ──
 model Usuario {
-  id        String   @id @default(cuid())
-  nome      String
-  email     String   @unique // @unique gera index e garante unicidade
-  senha     String   // Sempre guardar hash, nunca a senha em texto!
-  criadoEm DateTime @default(now())
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique // @unique gera index e garante unicidade
+  senha        String   // Sempre guardar hash, nunca a senha em texto!
+  refreshToken String?  @unique
+  criadoEm     DateTime @default(now())
 
   @@map("usuarios")
 }

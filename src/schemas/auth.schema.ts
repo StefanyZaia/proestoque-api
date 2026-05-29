@@ -14,6 +14,11 @@ export const loginSchema = z.object({
   senha: z.string().min(1, "Informe a senha"),
 });
 
+export const refreshSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token nao fornecido"),
+});
+
 // Tipos inferidos para usar nos controllers
 export type RegistroInput = z.infer<typeof registroSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type RefreshInput = z.infer<typeof refreshSchema>;

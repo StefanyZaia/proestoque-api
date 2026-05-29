@@ -38,6 +38,10 @@ export function autenticar(req: Request, res: Response, next: NextFunction) {
     // - Token malformado
     const payload = jwt.verify(token, config.jwtSecret) as JwtPayload;
 
+    if (payload.tipo === "refresh") {
+      throw new AppError("Use um access token para acessar esta rota.", 401);
+    }
+
     // 3. Anexar o payload ao request para os controllers acessarem
     req.usuario = payload;
     // Agora qualquer controller pode fazer: req.usuario.sub (ID do usuário)
