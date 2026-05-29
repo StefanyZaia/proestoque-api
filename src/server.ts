@@ -4,6 +4,7 @@ import { app } from "./app";
 import { prisma } from "./prisma/client";
 
 const PORT = process.env.PORT || 3333;
+const HOST = process.env.HOST || "0.0.0.0";
 
 async function iniciarServidor() {
   try {
@@ -11,7 +12,7 @@ async function iniciarServidor() {
 
     console.log("✅ Banco de dados conectado");
 
-    app.listen(PORT, () => {
+    app.listen(Number(PORT), HOST, () => {
       console.log(`🚀 ProEstoque API rodando em http://localhost:${PORT}`);
       console.log("📊 Prisma Studio: npx prisma studio");
     });
