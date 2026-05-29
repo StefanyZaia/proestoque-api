@@ -1,0 +1,90 @@
+// O provider define qual banco usar. Troque por "postgresql" no deploy.
+datasource db {
+  provider = "sqlite"
+}
+
+generator client {
+  provider = "prisma-client-js" // Gera o @prisma/client com tipos TypeScript
+}
+
+// ── CATEGORIA ────────────────────────────────────────────────
+model Categoria {
+  id        String     @id @default(cuid()) // ID único gerado automaticamente
+  nome      String
+  icone     String
+  cor       String
+  criadoEm  DateTime   @default(now())
+
+  // Relação: uma Categoria tem muitos Produtos
+  produtos  Produto[]
+
+  // Nome da tabela no banco
+  @@map("categorias")
+}
+
+// ── PRODUTO ──────────────────────────────────────────────────
+model Produto {
+  id                  String    @id @default(cuid())
+  nome                String
+  quantidade          Int       @default(0)
+  quantidadeMinima    Int       @default(0)
+  preco               Float
+  unidade             String    @default("un")  // "un", "kg", "cx", "L"
+  observacao          String?   // O ? significa nullable (opcional)
+  foto                String?
+  ultimaMovimentacao  DateTime  @default(now())
+  criadoEm            DateTime  @default(now())
+  atualizadoEm        DateTime  @updatedAt  // Atualizado automaticamente
+
+  // Chave estrangeira → ID da categoria
+  categoriaId         String
+  // Relação: cada Produto pertence a UMA Categoria
+  categoria           Categoria @relation(fields: [categoriaId], references: [id])
+
+  // Relação: um Produto pode ter muitas Movimentações
+  movimentacoes       Movimentacao[]
+
+  @@map("produtos")
+}
+
+// ── MOVIMENTAÇÃO DE ESTOQUE ──────────────────────────────────
+model Movimentacao {
+  id          String   @id @default(cuid())
+  tipo        String   // "entrada" ou "saida"
+  quantidade  Int
+  observacao  String?
+  data        DateTime @default(now())
+
+  // Chave estrangeira → ID do produto
+  produtoId   String
+  // Relação: cada Movimentação pertence a UM Produto
+  produto     Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  @@map("movimentacoes")
+}
+
+// ── USUÁRIO (será expandido na próxima aula com hash de senha) ──
+model Usuario {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String   @unique // @unique gera index e garante unicidade
+  senha     String   // Sempre guardar hash, nunca a senha em texto!
+  criadoEm DateTime @default(now())
+
+  @@map("usuarios")
+}
+
+// ──────────────────────────────────────────────────────────────
+// NOTAS SOBRE OS TIPOS:
+// String     → TEXT no SQLite
+// Int        → INTEGER
+// Float      → REAL
+// Boolean    → INTEGER (0/1) no SQLite
+// DateTime   → TEXT no SQLite (ISO 8601)
+// String?    → nullable (pode ser NULL)
+// @id        → chave primária
+// @default() → valor padrão
+// @unique    → constraint de unicidade
+// @updatedAt → atualizado automático pelo Prisma
+// @relation  → define a FK e a relação ORM
+// @@map      → nome da tabela no banco

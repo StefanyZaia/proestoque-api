@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",          // Versão do JavaScript gerado
+    "module": "commonjs",        // Sistema de módulos do Node.js
+    "lib": ["ES2020"],
+    "outDir": "./dist",          // Pasta de saída do build
+    "rootDir": "./src",          // Pasta raiz do código-fonte
+    "strict": true,              // Ativa todas as verificações de tipo
+    "esModuleInterop": true,     // Compatibilidade de imports
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

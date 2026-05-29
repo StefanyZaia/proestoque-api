@@ -1,0 +1,51 @@
+import express from "express";
+import cors from "cors";
+
+import { router } from "./routes";
+import { errorHandler } from "./middlewares/errorHandler";
+
+const app = express();
+
+// ── Middlewares Globais ──────────────────────────────────────
+
+// Permite que o app React Native acesse a API
+// Em produção, restrinja as origens: cors({ origin: "https://seuapp.com" })
+app.use(cors());
+
+// Habilita leitura de req.body como JSON
+// Obrigatório para receber dados em POST, PUT e PATCH
+app.use(express.json());
+
+// Habilita leitura de dados enviados por formulário
+// Não é obrigatório para JSON, mas ajuda em alguns testes
+app.use(express.urlencoded({ extended: true }));
+
+// Log de requisições em desenvolvimento
+if (process.env.NODE_ENV === "development") {
+  app.use((req, _res, next) => {
+    console.log(`→ ${req.method} ${req.path}`);
+    next();
+  });
+}
+
+// ── Rota de healthcheck ──────────────────────────────────────
+// Útil para verificar se o servidor está online
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    app: "ProEstoque API",
+    versao: "1.0.0",
+  });
+});
+
+// ── Rotas da API ─────────────────────────────────────────────
+// Todas as rotas ficam sob o prefixo /api
+// Ex: GET /api/produtos, POST /api/categorias
+app.use("/api", router);
+
+// ── Middleware de Erros ──────────────────────────────────────
+// O Express identifica middleware de erro pelos 4 parâmetros
+// Por isso, ele deve ficar sempre por último
+app.use(errorHandler);
+
+export { app };
