@@ -13,7 +13,8 @@ async function iniciarServidor() {
     console.log("✅ Banco de dados conectado");
 
     app.listen(Number(PORT), HOST, () => {
-      console.log(`🚀 ProEstoque API rodando em http://localhost:${PORT}`);
+      console.log(`🚀 ProEstoque API rodando em http://${HOST === '0.0.0.0' ? 'SEU_IP' : HOST}:${PORT}`);
+      console.log(`📱 Use http://172.30.219.101:${PORT} do Expo Go`);
       console.log("📊 Prisma Studio: npx prisma studio");
     });
   } catch (error) {

@@ -98,18 +98,34 @@ export class ProdutoController {
         throw new AppError("Categoria não encontrada", 404);
       }
 
-      const produto = await prisma.produto.create({
-        data: {
-          nome: String(nome).trim(),
-          categoriaId,
-          quantidade: Number(quantidade ?? 0),
-          quantidadeMinima: Number(quantidadeMinima ?? 0),
-          preco: Number(preco),
-          unidade: String(unidade ?? "un"),
-          observacao: observacao ? String(observacao) : null,
-          foto: foto ? String(foto) : null,
-        },
-        include: { categoria: true },
+      const quantidadeInicial = Number(quantidade ?? 0);
+      const produto = await prisma.$transaction(async (tx) => {
+        const criado = await tx.produto.create({
+          data: {
+            nome: String(nome).trim(),
+            categoriaId,
+            quantidade: quantidadeInicial,
+            quantidadeMinima: Number(quantidadeMinima ?? 0),
+            preco: Number(preco),
+            unidade: String(unidade ?? "un"),
+            observacao: observacao ? String(observacao) : null,
+            foto: foto ? String(foto) : null,
+          },
+          include: { categoria: true },
+        });
+
+        if (quantidadeInicial > 0) {
+          await tx.movimentacao.create({
+            data: {
+              produtoId: criado.id,
+              tipo: "entrada",
+              quantidade: quantidadeInicial,
+              observacao: "Estoque inicial",
+            },
+          });
+        }
+
+        return criado;
       });
 
       res.status(201).json(produto);
@@ -159,22 +175,42 @@ export class ProdutoController {
         }
       }
 
-      const produto = await prisma.produto.update({
-        where: { id },
-        data: {
-          ...(nome !== undefined && { nome: String(nome).trim() }),
-          ...(categoriaId !== undefined && { categoriaId }),
-          ...(quantidade !== undefined && { quantidade: Number(quantidade) }),
-          ...(quantidadeMinima !== undefined && {
-            quantidadeMinima: Number(quantidadeMinima),
-          }),
-          ...(preco !== undefined && { preco: Number(preco) }),
-          ...(unidade !== undefined && { unidade: String(unidade) }),
-          ...(observacao !== undefined && { observacao: observacao || null }),
-          ...(foto !== undefined && { foto: foto || null }),
-          ultimaMovimentacao: new Date(),
-        },
-        include: { categoria: true },
+      const produto = await prisma.$transaction(async (tx) => {
+        const novaQuantidade = quantidade === undefined
+          ? produtoExiste.quantidade
+          : Number(quantidade);
+        const diferenca = novaQuantidade - produtoExiste.quantidade;
+
+        if (!Number.isInteger(novaQuantidade) || novaQuantidade < 0) {
+          throw new AppError("Quantidade deve ser um inteiro nao negativo", 400);
+        }
+
+        if (diferenca !== 0) {
+          await tx.movimentacao.create({
+            data: {
+              produtoId: id,
+              tipo: diferenca > 0 ? "entrada" : "saida",
+              quantidade: Math.abs(diferenca),
+              observacao: "Ajuste realizado na edicao do produto",
+            },
+          });
+        }
+
+        return tx.produto.update({
+          where: { id },
+          data: {
+            ...(nome !== undefined && { nome: String(nome).trim() }),
+            ...(categoriaId !== undefined && { categoriaId }),
+            quantidade: novaQuantidade,
+            ...(quantidadeMinima !== undefined && { quantidadeMinima: Number(quantidadeMinima) }),
+            ...(preco !== undefined && { preco: Number(preco) }),
+            ...(unidade !== undefined && { unidade: String(unidade) }),
+            ...(observacao !== undefined && { observacao: observacao || null }),
+            ...(foto !== undefined && { foto: foto || null }),
+            ...(diferenca !== 0 && { ultimaMovimentacao: new Date() }),
+          },
+          include: { categoria: true },
+        });
       });
 
       res.json(produto);
