@@ -7,7 +7,15 @@ const connectionString =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@localhost:5432/proestoque?schema=public";
 
-const adapter = new PrismaPg({ connectionString });
+const precisaSsl =
+  connectionString.includes("sslmode=require") ||
+  connectionString.includes("proxy.rlwy.net") ||
+  connectionString.includes("railway.internal");
+
+const adapter = new PrismaPg({
+  connectionString,
+  ...(precisaSsl ? { ssl: { rejectUnauthorized: false } } : {}),
+});
 
 export const prisma =
   globalForPrisma.prisma ??

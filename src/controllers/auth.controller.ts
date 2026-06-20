@@ -1,4 +1,6 @@
 import bcrypt from "bcrypt";
+import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { NextFunction, Request, Response } from "express";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { config } from "../config";
@@ -9,6 +11,7 @@ export type JwtPayload = {
   sub: string;
   nome: string;
   email: string;
+  jti?: string;
   tipo?: "access" | "refresh";
 };
 
@@ -30,6 +33,7 @@ function gerarRefreshToken(usuario: { id: string; nome: string; email: string })
     sub: usuario.id,
     nome: usuario.nome,
     email: usuario.email,
+    jti: randomUUID(),
     tipo: "refresh",
   };
 
@@ -39,14 +43,39 @@ function gerarRefreshToken(usuario: { id: string; nome: string; email: string })
 }
 
 async function salvarRefreshToken(usuario: { id: string; nome: string; email: string }) {
-  const refreshToken = gerarRefreshToken(usuario);
+  for (let tentativa = 0; tentativa < 3; tentativa += 1) {
+    const refreshToken = gerarRefreshToken(usuario);
 
-  await prisma.usuario.update({
-    where: { id: usuario.id },
-    data: { refreshToken },
-  });
+    try {
+      await prisma.usuario.update({
+        where: { id: usuario.id },
+        data: { refreshToken },
+      });
 
-  return refreshToken;
+      return refreshToken;
+    } catch (error) {
+      const errorText = error instanceof Error ? error.message.toLowerCase() : "";
+      const errorMeta =
+        error instanceof Prisma.PrismaClientKnownRequestError
+          ? JSON.stringify(error.meta ?? {}).toLowerCase()
+          : "";
+      const isRefreshTokenDuplicado =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002" &&
+        (
+          errorText.includes("refreshtoken") ||
+          errorText.includes("refresh_token") ||
+          errorMeta.includes("refreshtoken") ||
+          errorMeta.includes("refresh_token")
+        );
+
+      if (!isRefreshTokenDuplicado || tentativa === 2) {
+        throw error;
+      }
+    }
+  }
+
+  throw new AppError("Nao foi possivel gerar refresh token", 500);
 }
 
 export class AuthController {
