@@ -1,6 +1,5 @@
-// O provider define qual banco usar. Troque por "postgresql" no deploy.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 generator client {
